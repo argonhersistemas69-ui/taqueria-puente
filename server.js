@@ -14,10 +14,9 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-// Archivo local para persistencia en el servidor
-const DATA_FILE = path.join(__dirname, 'database_store.json');
+// Ruta absoluta asegurada para el archivo de persistencia
+const DATA_FILE = path.join(process.cwd(), 'database_store.json');
 
-// Cargar estado inicial desde archivo o usar valores por defecto
 let currentState = {
     orders: [],
     expenses: [],
@@ -25,21 +24,25 @@ let currentState = {
     branchStock: {}
 };
 
+// Cargar datos al iniciar
 if (fs.existsSync(DATA_FILE)) {
     try {
         const rawData = fs.readFileSync(DATA_FILE, 'utf8');
         currentState = JSON.parse(rawData);
-        console.log("Datos cargados correctamente desde el disco.");
+        console.log("Base de datos cargada desde el disco correctamente.");
     } catch (e) {
-        console.error("Error leyendo archivo de base de datos:", e);
+        console.error("Error leyendo database_store.json:", e);
     }
+} else {
+    console.log("No se encontró archivo previo, se iniciará uno nuevo al guardar.");
 }
 
 function saveStateToDisk(state) {
     try {
         fs.writeFileSync(DATA_FILE, JSON.stringify(state, null, 2), 'utf8');
+        console.log("Estado guardado en disco exitosamente.");
     } catch (e) {
-        console.error("Error guardando datos en disco:", e);
+        console.error("Error crítico al guardar en disco:", e);
     }
 }
 
@@ -55,7 +58,7 @@ app.post('/api/state', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-    console.log('Nuevo dispositivo conectado');
+    console.log('Nuevo dispositivo conectado al puente');
     socket.emit('state_update', currentState);
 
     socket.on('client_update', (newState) => {
